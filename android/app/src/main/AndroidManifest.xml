@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- サービスアイコンの取得（wsrv.nl 経由の画像ダウンロード）に必要。
+         debug/profile ビルドには自動付与されるが、release ビルドには明示が必要。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="SubKan"
         android:name="${applicationName}"
