@@ -35,6 +35,26 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Set up release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::署名用のSecretsが未設定のため、デバッグ署名でビルドします。"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/subkan-release.jks
+          cat > android/key.properties <<EOF
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=subkan-release.jks
+          EOF
+          echo "リリース署名を設定しました。"
+
       - name: Build release APK
         run: flutter build apk --release
 
