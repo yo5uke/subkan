@@ -9,6 +9,7 @@ import '../providers/payment_card_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/subscription_card.dart';
 import '../widgets/card_edit_dialog.dart';
+import '../utils/card_brand_colors.dart';
 import 'add_screen.dart';
 import 'settings_screen.dart';
 
@@ -46,6 +47,142 @@ class ListScreen extends ConsumerWidget {
     if (shouldDelete == true && context.mounted) {
       await _deleteCardAndSubscriptionsWithUndo(context, ref, card, linkedSubs);
     }
+  }
+
+  // タブ長押しで表示するアクションメニュー（並び替え／編集／削除）
+  void _showCardActionMenu(
+      BuildContext context, WidgetRef ref, PaymentCard card, List<PaymentCard> cards) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(color: card.color, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        card.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.swap_vert),
+                title: const Text('並び替え'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _showCardReorderSheet(context, ref);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('名前・色を編集'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  showDialog(
+                    context: context,
+                    builder: (context) =>
+                        CardEditDialog(cardToEdit: card, nextOrder: cards.length),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('削除', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _showCardDeleteDialog(context, ref, card);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ドラッグでカードを並び替えるボトムシート
+  void _showCardReorderSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final cards = ref.watch(paymentCardListProvider);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+                    child: Text(
+                      'カードの並び替え',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.6,
+                    ),
+                    child: ReorderableListView.builder(
+                      shrinkWrap: true,
+                      buildDefaultDragHandles: false,
+                      itemCount: cards.length,
+                      onReorder: (oldIndex, newIndex) {
+                        ref
+                            .read(paymentCardListProvider.notifier)
+                            .reorderCards(oldIndex, newIndex);
+                      },
+                      itemBuilder: (context, index) {
+                        final card = cards[index];
+                        return ListTile(
+                          key: ValueKey(card.id),
+                          leading: Container(
+                            width: 24,
+                            height: 24,
+                            decoration:
+                                BoxDecoration(color: card.color, shape: BoxShape.circle),
+                          ),
+                          title: Text(card.name),
+                          trailing: ReorderableDragStartListener(
+                            index: index,
+                            child: const Icon(Icons.drag_handle),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _deleteCardAndSubscriptionsWithUndo(
@@ -89,7 +226,7 @@ class ListScreen extends ConsumerWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onLongPress: () {
-            _showCardDeleteDialog(context, ref, card);
+            _showCardActionMenu(context, ref, card, cards);
           },
           child: Container(
             alignment: Alignment.center,

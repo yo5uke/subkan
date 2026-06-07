@@ -150,6 +150,18 @@ class SettingsScreen extends ConsumerWidget {
               );
             },
           ),
+          _sectionHeader(context, '管理'),
+          ListTile(
+            leading: const Icon(Icons.credit_card_outlined),
+            title: const Text('支払いカードの管理'),
+            subtitle: const Text('カードの追加、編集、削除、並べ替え'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const CardManagementScreen()),
+              );
+            },
+          ),
           _sectionHeader(context, '並び替え'),
           ListTile(
             leading: const Icon(Icons.sort_outlined),
@@ -234,18 +246,6 @@ class SettingsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-              );
-            },
-          ),
-          _sectionHeader(context, '管理'),
-          ListTile(
-            leading: const Icon(Icons.credit_card_outlined),
-            title: const Text('支払いカードの管理'),
-            subtitle: const Text('カードの追加、編集、削除、並べ替え'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const CardManagementScreen()),
               );
             },
           ),

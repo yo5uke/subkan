@@ -39,19 +39,24 @@ class SubscriptionCard extends StatelessWidget {
           return '$currency $formattedValue';
       }
     }
-    final dateFormatter = DateFormat('yyyy/MM/dd');
+    // 支払日を「毎月◯日」「毎年◯月◯日」の周期表記にする
+    final paymentDate = subscription.nextPaymentDate;
+    final cycleText = subscription.billingCycle == 'yearly'
+        ? '毎年${paymentDate.month}月${paymentDate.day}日'
+        : '毎月${paymentDate.day}日';
 
     // 日付の計算 (残り日数)
     final now = DateTime.now();
-    final nextDate = DateTime(subscription.nextPaymentDate.year, subscription.nextPaymentDate.month, subscription.nextPaymentDate.day);
+    final nextDate = DateTime(paymentDate.year, paymentDate.month, paymentDate.day);
     final today = DateTime(now.year, now.month, now.day);
     final diffDays = nextDate.difference(today).inDays;
 
     String diffText;
     Color diffColor;
     if (diffDays < 0) {
-      diffText = '支払い遅延';
-      diffColor = Colors.red;
+      // 支払日を過ぎている＝決済済みとみなし、「済」を青で表示
+      diffText = '済';
+      diffColor = Colors.blue;
     } else if (diffDays == 0) {
       diffText = '今日';
       diffColor = Colors.orange;
@@ -131,11 +136,15 @@ class SubscriptionCard extends StatelessWidget {
                       children: [
                         Icon(Icons.credit_card, size: 14, color: accentColor),
                         const SizedBox(width: 4),
-                        Text(
-                          card?.name ?? '不明なカード',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        Flexible(
+                          child: Text(
+                            card?.name ?? '不明なカード',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            ),
                           ),
                         ),
                       ],
@@ -159,7 +168,7 @@ class SubscriptionCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        dateFormatter.format(subscription.nextPaymentDate),
+                        cycleText,
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
