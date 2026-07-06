@@ -13,12 +13,97 @@ import '../utils/card_brand_colors.dart';
 import 'add_screen.dart';
 import 'settings_screen.dart';
 
-class ListScreen extends ConsumerWidget {
+class ListScreen extends ConsumerStatefulWidget {
   const ListScreen({super.key});
 
-  Future<void> _showCardDeleteDialog(BuildContext context, WidgetRef ref, PaymentCard card) async {
+  @override
+  ConsumerState<ListScreen> createState() => _ListScreenState();
+}
+
+class _ListScreenState extends ConsumerState<ListScreen>
+    with TickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 1, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  // タブ数（すべて＋カード枚数）が変わった時だけTabControllerを作り直す。
+  // 表示中タブの追跡は_tabController.index/animationに一本化し、
+  // スワイプ中でもヘッダーの金額がリアルタイムに追従するようにする
+  // （AnimatedBuilderでcontroller.animationを直接購読するため）。
+  void _syncTabController(int tabCount) {
+    if (_tabController.length == tabCount) {
+      if (_tabController.index >= tabCount) {
+        _tabController.index = tabCount - 1;
+      }
+      return;
+    }
+
+    final nextIndex = _tabController.index.clamp(0, tabCount - 1);
+    _tabController.dispose();
+    _tabController = TabController(
+      length: tabCount,
+      vsync: this,
+      initialIndex: nextIndex,
+    );
+  }
+
+  Map<String, double> _calculateMonthlyTotals(
+      List<Subscription> subscriptions) {
+    final Map<String, double> totals = {};
+    for (final sub in subscriptions) {
+      final monthlyAmount =
+          sub.billingCycle == 'yearly' ? sub.price / 12 : sub.price;
+      totals[sub.currency] = (totals[sub.currency] ?? 0) + monthlyAmount;
+    }
+    return totals;
+  }
+
+  List<Subscription> _subscriptionsForTab(
+    List<Subscription> subscriptions,
+    List<PaymentCard> cards,
+    int tabIndex,
+  ) {
+    if (tabIndex <= 0 || cards.isEmpty) {
+      return subscriptions;
+    }
+
+    final cardIndex = tabIndex - 1;
+    if (cardIndex >= cards.length) {
+      return subscriptions;
+    }
+
+    final cardId = cards[cardIndex].id;
+    return subscriptions.where((sub) => sub.cardId == cardId).toList();
+  }
+
+  String _summaryLabel(List<PaymentCard> cards, int tabIndex) {
+    if (tabIndex <= 0 || cards.isEmpty) {
+      return '月額合計';
+    }
+
+    final cardIndex = tabIndex - 1;
+    if (cardIndex >= cards.length) {
+      return '月額合計';
+    }
+
+    return '${cards[cardIndex].name}の月額';
+  }
+
+  Future<void> _showCardDeleteDialog(
+      BuildContext context, WidgetRef ref, PaymentCard card) async {
     final subscriptions = ref.read(subscriptionListProvider);
-    final linkedSubs = subscriptions.where((sub) => sub.cardId == card.id).toList();
+    final linkedSubs =
+        subscriptions.where((sub) => sub.cardId == card.id).toList();
 
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -50,8 +135,8 @@ class ListScreen extends ConsumerWidget {
   }
 
   // タブ長押しで表示するアクションメニュー（並び替え／編集／削除）
-  void _showCardActionMenu(
-      BuildContext context, WidgetRef ref, PaymentCard card, List<PaymentCard> cards) {
+  void _showCardActionMenu(BuildContext context, WidgetRef ref,
+      PaymentCard card, List<PaymentCard> cards) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -71,7 +156,8 @@ class ListScreen extends ConsumerWidget {
                     Container(
                       width: 16,
                       height: 16,
-                      decoration: BoxDecoration(color: card.color, shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                          color: card.color, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 10),
                     Flexible(
@@ -79,7 +165,8 @@ class ListScreen extends ConsumerWidget {
                         card.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -100,8 +187,8 @@ class ListScreen extends ConsumerWidget {
                   Navigator.of(sheetContext).pop();
                   showDialog(
                     context: context,
-                    builder: (context) =>
-                        CardEditDialog(cardToEdit: card, nextOrder: cards.length),
+                    builder: (context) => CardEditDialog(
+                        cardToEdit: card, nextOrder: cards.length),
                   );
                 },
               ),
@@ -141,7 +228,8 @@ class ListScreen extends ConsumerWidget {
                     padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
                     child: Text(
                       'カードの並び替え',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   ConstrainedBox(
@@ -164,8 +252,8 @@ class ListScreen extends ConsumerWidget {
                           leading: Container(
                             width: 24,
                             height: 24,
-                            decoration:
-                                BoxDecoration(color: card.color, shape: BoxShape.circle),
+                            decoration: BoxDecoration(
+                                color: card.color, shape: BoxShape.circle),
                           ),
                           title: Text(card.name),
                           trailing: ReorderableDragStartListener(
@@ -185,11 +273,13 @@ class ListScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _deleteCardAndSubscriptionsWithUndo(
-      BuildContext context, WidgetRef ref, PaymentCard card, List<Subscription> linkedSubs) async {
+  Future<void> _deleteCardAndSubscriptionsWithUndo(BuildContext context,
+      WidgetRef ref, PaymentCard card, List<Subscription> linkedSubs) async {
     await ref.read(paymentCardListProvider.notifier).deleteCard(card.id);
     for (var sub in linkedSubs) {
-      await ref.read(subscriptionListProvider.notifier).deleteSubscription(sub.id);
+      await ref
+          .read(subscriptionListProvider.notifier)
+          .deleteSubscription(sub.id);
     }
 
     if (context.mounted) {
@@ -203,7 +293,9 @@ class ListScreen extends ConsumerWidget {
             onPressed: () async {
               await ref.read(paymentCardListProvider.notifier).addCard(card);
               for (var sub in linkedSubs) {
-                await ref.read(subscriptionListProvider.notifier).addSubscription(sub);
+                await ref
+                    .read(subscriptionListProvider.notifier)
+                    .addSubscription(sub);
               }
             },
           ),
@@ -219,21 +311,22 @@ class ListScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildTabBarWithAddButton(BuildContext context, WidgetRef ref, List<PaymentCard> cards, String position) {
+  Widget _buildTabBarWithAddButton(BuildContext context, WidgetRef ref,
+      List<PaymentCard> cards, String position) {
     final tabs = [
       const Tab(text: 'すべて'),
       ...cards.map((card) => Tab(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onLongPress: () {
-            _showCardActionMenu(context, ref, card, cards);
-          },
-          child: Container(
-            alignment: Alignment.center,
-            child: Text(card.name),
-          ),
-        ),
-      )),
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onLongPress: () {
+                _showCardActionMenu(context, ref, card, cards);
+              },
+              child: Container(
+                alignment: Alignment.center,
+                child: Text(card.name),
+              ),
+            ),
+          )),
     ];
 
     return Container(
@@ -244,10 +337,13 @@ class ListScreen extends ConsumerWidget {
         children: [
           Expanded(
             child: TabBar(
+              controller: _tabController,
               isScrollable: true,
               tabAlignment: TabAlignment.start,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 15),
+              labelStyle:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              unselectedLabelStyle:
+                  const TextStyle(fontWeight: FontWeight.normal, fontSize: 15),
               indicatorSize: TabBarIndicatorSize.tab,
               indicator: UnderlineTabIndicator(
                 borderSide: BorderSide(
@@ -278,22 +374,17 @@ class ListScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final subscriptions = ref.watch(subscriptionListProvider);
     final cards = ref.watch(paymentCardListProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tabBarPosition = ref.watch(tabBarPositionProvider);
     final sortOrder = ref.watch(subscriptionSortOrderProvider);
     final ascending = ref.watch(subscriptionSortAscendingProvider);
-    // 通貨ごとの月額合計を計算
-    final Map<String, double> totals = {};
-    for (var sub in subscriptions) {
-      double monthlyAmount = sub.billingCycle == 'yearly' ? sub.price / 12 : sub.price;
-      totals[sub.currency] = (totals[sub.currency] ?? 0) + monthlyAmount;
-    }
 
     String formatTotal(double amount, String currency) {
-      final formatter = NumberFormat.currency(locale: 'ja_JP', symbol: '', decimalDigits: 0);
+      final formatter =
+          NumberFormat.currency(locale: 'ja_JP', symbol: '', decimalDigits: 0);
       final formatted = formatter.format(amount).trim();
       switch (currency) {
         case 'JPY':
@@ -309,253 +400,318 @@ class ListScreen extends ConsumerWidget {
 
     // タブの数を決定（すべて + 各カード）
     final tabCount = 1 + cards.length;
+    _syncTabController(tabCount);
 
-    return DefaultTabController(
-      length: tabCount,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.bookmarks_outlined,
-                color: Theme.of(context).colorScheme.primary,
-                size: 28,
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.bookmarks_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'SubKan',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w900,
+                fontSize: 26,
+                letterSpacing: 0.5,
+                color: isDark ? Colors.white : Colors.black87,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'SubKan',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 26,
-                  letterSpacing: 0.5,
-                  color: isDark ? Colors.white : Colors.black87,
+            ),
+          ],
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort),
+            tooltip: '並び替え',
+            onSelected: (String value) {
+              if (value == 'asc') {
+                ref
+                    .read(subscriptionSortAscendingProvider.notifier)
+                    .setAscending(true);
+              } else if (value == 'desc') {
+                ref
+                    .read(subscriptionSortAscendingProvider.notifier)
+                    .setAscending(false);
+              } else {
+                ref
+                    .read(subscriptionSortOrderProvider.notifier)
+                    .setSortOrder(value);
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'default',
+                child: Row(
+                  children: [
+                    if (sortOrder == 'default')
+                      const Icon(Icons.check, size: 18),
+                    if (sortOrder == 'default')
+                      const SizedBox(width: 8)
+                    else
+                      const SizedBox(width: 26),
+                    const Text('登録日順'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'name',
+                child: Row(
+                  children: [
+                    if (sortOrder == 'name') const Icon(Icons.check, size: 18),
+                    if (sortOrder == 'name')
+                      const SizedBox(width: 8)
+                    else
+                      const SizedBox(width: 26),
+                    const Text('名称順'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'payment_date',
+                child: Row(
+                  children: [
+                    if (sortOrder == 'payment_date')
+                      const Icon(Icons.check, size: 18),
+                    if (sortOrder == 'payment_date')
+                      const SizedBox(width: 8)
+                    else
+                      const SizedBox(width: 26),
+                    const Text('支払日順'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem<String>(
+                value: 'asc',
+                child: Row(
+                  children: [
+                    if (ascending) const Icon(Icons.check, size: 18),
+                    if (ascending)
+                      const SizedBox(width: 8)
+                    else
+                      const SizedBox(width: 26),
+                    const Text('昇順'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'desc',
+                child: Row(
+                  children: [
+                    if (!ascending) const Icon(Icons.check, size: 18),
+                    if (!ascending)
+                      const SizedBox(width: 8)
+                    else
+                      const SizedBox(width: 26),
+                    const Text('降順'),
+                  ],
                 ),
               ),
             ],
           ),
-          actions: [
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.sort),
-              tooltip: '並び替え',
-              onSelected: (String value) {
-                if (value == 'asc') {
-                  ref.read(subscriptionSortAscendingProvider.notifier).setAscending(true);
-                } else if (value == 'desc') {
-                  ref.read(subscriptionSortAscendingProvider.notifier).setAscending(false);
-                } else {
-                  ref.read(subscriptionSortOrderProvider.notifier).setSortOrder(value);
-                }
-              },
-              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(
-                  value: 'default',
-                  child: Row(
-                    children: [
-                      if (sortOrder == 'default') const Icon(Icons.check, size: 18),
-                      if (sortOrder == 'default') const SizedBox(width: 8) else const SizedBox(width: 26),
-                      const Text('登録日順'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'name',
-                  child: Row(
-                    children: [
-                      if (sortOrder == 'name') const Icon(Icons.check, size: 18),
-                      if (sortOrder == 'name') const SizedBox(width: 8) else const SizedBox(width: 26),
-                      const Text('名称順'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'payment_date',
-                  child: Row(
-                    children: [
-                      if (sortOrder == 'payment_date') const Icon(Icons.check, size: 18),
-                      if (sortOrder == 'payment_date') const SizedBox(width: 8) else const SizedBox(width: 26),
-                      const Text('支払日順'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem<String>(
-                  value: 'asc',
-                  child: Row(
-                    children: [
-                      if (ascending) const Icon(Icons.check, size: 18),
-                      if (ascending) const SizedBox(width: 8) else const SizedBox(width: 26),
-                      const Text('昇順'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'desc',
-                  child: Row(
-                    children: [
-                      if (!ascending) const Icon(Icons.check, size: 18),
-                      if (!ascending) const SizedBox(width: 8) else const SizedBox(width: 26),
-                      const Text('降順'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                );
-              },
-              tooltip: '設定',
-            ),
-          ],
-          bottom: tabBarPosition == 'top'
-              ? PreferredSize(
-                  preferredSize: const Size.fromHeight(48),
-                  child: _buildTabBarWithAddButton(context, ref, cards, 'top'),
-                )
-              : null,
-        ),
-        body: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [
-                          Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.15),
-                          Theme.of(context).colorScheme.surfaceContainerLowest,
-                        ]
-                      : [
-                          Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.35),
-                          Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.1),
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(32),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 28.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '月額合計',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (totals.isEmpty)
-                    Text(
-                      '¥0',
-                      style: GoogleFonts.outfit(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        letterSpacing: 0.5,
-                      ),
-                    )
-                  else
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: (() {
-                        final sortedKeys = totals.keys.toList();
-                        sortedKeys.sort((a, b) {
-                          if (a == 'JPY') return -1;
-                          if (b == 'JPY') return 1;
-                          return a.compareTo(b);
-                        });
-                        
-                        final List<Widget> widgets = [];
-                        for (int i = 0; i < sortedKeys.length; i++) {
-                          final currency = sortedKeys[i];
-                          final total = totals[currency]!;
-                          
-                          widgets.add(Text(
-                            formatTotal(total, currency),
-                            style: GoogleFonts.outfit(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w900,
-                              color: Theme.of(context).colorScheme.onSurface,
-                              letterSpacing: 0.5,
-                            ),
-                          ));
-
-                          if (i < sortedKeys.length - 1) {
-                            widgets.add(Text(
-                              '+',
-                              style: GoogleFonts.outfit(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                              ),
-                            ));
-                          }
-                        }
-                        return widgets;
-                      })(),
-                    ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  // 「すべて」のタブ
-                  _buildList(context, subscriptions, cards),
-                  // 各カードごとのタブ
-                  ...cards.map((card) {
-                    final filteredSubs = subscriptions.where((sub) => sub.cardId == card.id).toList();
-                    return _buildList(context, filteredSubs, cards);
-                  }),
-                ],
-              ),
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              showDragHandle: true,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              builder: (context) => const AddScreen(),
-            );
-          },
-          icon: const Icon(Icons.add),
-          label: const Text('サブスクの追加'),
-        ),
-        bottomNavigationBar: tabBarPosition == 'bottom'
-            ? SafeArea(
-                child: _buildTabBarWithAddButton(context, ref, cards, 'bottom'),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+            tooltip: '設定',
+          ),
+        ],
+        bottom: tabBarPosition == 'top'
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: _buildTabBarWithAddButton(context, ref, cards, 'top'),
               )
             : null,
       ),
+      body: Column(
+        children: [
+          // TabControllerのanimation値を直接購読することで、タップ操作は
+          // もちろんスワイプ中もページの動きにリアルタイムで追従して
+          // ヘッダーの金額・ラベルを切り替える（従来はindexの変化を
+          // addListener+setStateで拾っていたが、タイミングによっては
+          // ヘッダーが「すべて」の合計のまま取り残されることがあった）。
+          AnimatedBuilder(
+            animation: _tabController.animation!,
+            builder: (context, _) {
+              final tabIndex = _tabController.animation!.value
+                  .round()
+                  .clamp(0, cards.length);
+              final visibleSubscriptions =
+                  _subscriptionsForTab(subscriptions, cards, tabIndex);
+              final totals = _calculateMonthlyTotals(visibleSubscriptions);
+              final summaryLabel = _summaryLabel(cards, tabIndex);
+
+              return Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [
+                            Theme.of(context)
+                                .colorScheme
+                                .primaryContainer
+                                .withValues(alpha: 0.15),
+                            Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerLowest,
+                          ]
+                        : [
+                            Theme.of(context)
+                                .colorScheme
+                                .primaryContainer
+                                .withValues(alpha: 0.35),
+                            Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer
+                                .withValues(alpha: 0.1),
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(32),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28.0, vertical: 28.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      summaryLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.8),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (totals.isEmpty)
+                      Text(
+                        '¥0',
+                        style: GoogleFonts.outfit(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          letterSpacing: 0.5,
+                        ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: (() {
+                          final sortedKeys = totals.keys.toList();
+                          sortedKeys.sort((a, b) {
+                            if (a == 'JPY') return -1;
+                            if (b == 'JPY') return 1;
+                            return a.compareTo(b);
+                          });
+
+                          final List<Widget> widgets = [];
+                          for (int i = 0; i < sortedKeys.length; i++) {
+                            final currency = sortedKeys[i];
+                            final total = totals[currency]!;
+
+                            widgets.add(
+                              Text(
+                                formatTotal(total, currency),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w900,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            );
+
+                            if (i < sortedKeys.length - 1) {
+                              widgets.add(
+                                Text(
+                                  '+',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                          return widgets;
+                        })(),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildList(context, subscriptions, cards),
+                ...cards.map((card) {
+                  final filteredSubs = subscriptions
+                      .where((sub) => sub.cardId == card.id)
+                      .toList();
+                  return _buildList(context, filteredSubs, cards);
+                }),
+              ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            showDragHandle: true,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            builder: (context) => const AddScreen(),
+          );
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('サブスクの追加'),
+      ),
+      bottomNavigationBar: tabBarPosition == 'bottom'
+          ? SafeArea(
+              child: _buildTabBarWithAddButton(context, ref, cards, 'bottom'),
+            )
+          : null,
     );
   }
 
-  Widget _buildList(BuildContext context, List<Subscription> subs, List<PaymentCard> cards) {
+  Widget _buildList(
+      BuildContext context, List<Subscription> subs, List<PaymentCard> cards) {
     if (subs.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.library_books_outlined, size: 64, color: Colors.grey.shade400),
+            Icon(Icons.library_books_outlined,
+                size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
               'サブスクリプションが登録されていません',
