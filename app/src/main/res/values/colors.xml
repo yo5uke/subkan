@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      XML colours exist only for the launch window and the adaptive icon.
+      Every colour the user actually sees inside the app comes from
+      com.subkan.ui.theme.Color / SubKanTheme.
+    -->
+
+    <!--
+      The launcher icon's artwork is purple on white, so the icon background is white and the
+      foreground carries the mark. The foreground PNG is opaque white across the whole 108dp canvas
+      rather than transparent: keying the white out would leave a fringe on every antialiased edge,
+      and with both layers white there is nothing to see through to.
+    -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+
+    <color name="splash_background">#FFFBFE</color>
+    <color name="app_background">#FFFBFE</color>
+</resources>

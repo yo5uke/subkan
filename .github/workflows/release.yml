@@ -1,6 +1,6 @@
 name: Release APK
 
-# バージョンタグ（例: v1.0.0）を push すると、APK を自動ビルドして
+# バージョンタグ（例: v2.0.0）を push すると、APK を自動ビルドして
 # GitHub Releases に添付します。
 on:
   push:
@@ -16,25 +16,33 @@ permissions:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      # JDK 21: gradle/gradle-daemon-jvm.properties がデーモンのツールチェーンを 21 に固定している。
+      # （生成されるバイトコードは 17 ターゲットのまま。app/build.gradle.kts の compileOptions を参照）
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v5
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
         with:
-          channel: stable
-          cache: true
+          packages: 'platform-tools'
 
-      - name: Install dependencies
-        run: flutter pub get
-
+      # Secrets が未設定なら keystore.properties を作らない。
+      # app/build.gradle.kts はその場合 signingConfig を空のままにするため、
+      # ビルドは失敗せず「未署名 APK」になる。
       - name: Set up release signing
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -43,25 +51,41 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::warning::署名用のSecretsが未設定のため、デバッグ署名でビルドします。"
+            echo "::warning::署名用の Secrets が未設定のため、未署名 APK をビルドします。"
             exit 0
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/subkan-release.jks
-          cat > android/key.properties <<EOF
-          storePassword=$STORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
+          echo "$KEYSTORE_BASE64" | base64 -d > subkan-release.jks
+          cat > keystore.properties <<EOF
           storeFile=subkan-release.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
           EOF
           echo "リリース署名を設定しました。"
 
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --no-daemon
+
       - name: Build release APK
-        run: flutter build apk --release
+        run: ./gradlew :app:assembleRelease --no-daemon
+
+      # An unsigned APK cannot be installed, so shipping one to Releases would look like a
+      # successful release and fail for every user who downloaded it. Fail here instead.
+      - name: Check the APK is signed
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          if [ ! -f app/build/outputs/apk/release/app-release.apk ]; then
+            echo "::error::署名済み APK がありません。リポジトリの Secrets" \
+                 "(KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD) を確認してください。"
+            ls -l app/build/outputs/apk/release/
+            exit 1
+          fi
 
       - name: Rename APK
         run: |
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk "dist/SubKan-${{ github.ref_name }}.apk"
+          cp app/build/outputs/apk/release/app-release*.apk \
+            "dist/SubKan-${{ github.ref_name }}.apk"
 
       - name: Publish to GitHub Releases
         # タグ push 時のみリリースを作成（手動実行ではビルド確認のみ）
