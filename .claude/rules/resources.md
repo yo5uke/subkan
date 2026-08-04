@@ -34,7 +34,13 @@ needed — do not add them.
 
 The source artwork is `art/logo.png` (1984×2114, purple mark on white). The density PNGs are
 generated from it, so **edit the source and regenerate — never touch the density files by hand.**
-Three things about that generation are deliberate:
+Four things about that generation are deliberate:
+
+- The crop that finds the mark thresholds at **>40 difference from white, not >12**. The source
+  carries a near-white decorative wash in the bottom-right corner; a loose threshold pulls it into
+  the bounding box, which pads the crop down and right and leaves the mark visibly up and left of
+  centre once that crop is centred. After regenerating, check the ink margins are symmetric rather
+  than trusting the eye.
 
 - The foreground is **opaque white across the whole 108dp canvas**, not a transparent cut-out.
   The artwork is drawn on white, and keying that out leaves a fringe along every antialiased edge.

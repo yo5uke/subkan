@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       # JDK 21: gradle/gradle-daemon-jvm.properties がデーモンのツールチェーンを 21 に固定している。
       # （生成されるバイトコードは 17 ターゲットのまま。app/build.gradle.kts の compileOptions を参照）
@@ -30,13 +30,13 @@ jobs:
           java-version: '21'
 
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v5
+        uses: gradle/actions/wrapper-validation@v6
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
 
@@ -85,22 +85,26 @@ jobs:
           fi
 
       - name: Rename APK
+        id: package
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/release/app-release*.apk \
-            "dist/SubKan-${{ github.ref_name }}.apk"
+          # 手動実行では ref_name がブランチ名になり、`release/v2.0.0` のように
+          # スラッシュを含む。そのまま使うと存在しないディレクトリへのパスになるため置換する。
+          name="${GITHUB_REF_NAME//\//-}"
+          cp app/build/outputs/apk/release/app-release*.apk "dist/SubKan-${name}.apk"
+          echo "apk=dist/SubKan-${name}.apk" >> "$GITHUB_OUTPUT"
 
       - name: Publish to GitHub Releases
         # タグ push 時のみリリースを作成（手動実行ではビルド確認のみ）
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          files: dist/SubKan-${{ github.ref_name }}.apk
+          files: ${{ steps.package.outputs.apk }}
           generate_release_notes: true
 
       - name: Upload APK as build artifact
         # 手動実行（タグ無し）でも成果物を確認できるようにする
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: SubKan-apk
           path: dist/*.apk

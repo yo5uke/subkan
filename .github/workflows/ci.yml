@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       # JDK 21, not 17: gradle/gradle-daemon-jvm.properties pins the daemon toolchain to 21.
       # (The compiled bytecode still targets 17 — see compileOptions in app/build.gradle.kts.)
@@ -34,16 +34,16 @@ jobs:
 
       # Confirms gradle-wrapper.jar matches an official Gradle release before we execute it.
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v5
+        uses: gradle/actions/wrapper-validation@v6
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
 
       # This step exists to accept the SDK licences; that is what lets AGP fetch the rest itself.
       # Deliberately not installing the platform — from API 37 the packages are named major.minor
       # (`platforms;android-37.0`), and which minor `compileSdk = 37` resolves to is AGP's call.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
 
@@ -56,7 +56,7 @@ jobs:
       # Without this, a red build only shows the Gradle summary and not which assertion failed.
       - name: Upload test report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-report
           path: app/build/reports/tests/testDebugUnitTest/
