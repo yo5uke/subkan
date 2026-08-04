@@ -71,8 +71,11 @@ jobs:
 
       # An unsigned APK cannot be installed, so shipping one to Releases would look like a
       # successful release and fail for every user who downloaded it. Fail here instead.
+      #
+      # Deliberately not limited to tag pushes: that is what makes a manual run a real rehearsal.
+      # Secrets are the one part of a release that cannot be checked by building locally, so the
+      # dry run has to be the thing that checks them.
       - name: Check the APK is signed
-        if: startsWith(github.ref, 'refs/tags/')
         run: |
           if [ ! -f app/build/outputs/apk/release/app-release.apk ]; then
             echo "::error::署名済み APK がありません。リポジトリの Secrets" \
