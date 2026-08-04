@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SubKan's UI is Japanese only, so Japanese lives in the default `values/` folder rather than in
+  `values-ja/`. That is deliberate: it means the app reads the same on a device set to any language,
+  which is what the Flutter build did with `supportedLocales: [ja_JP]`.
+
+  If the app is ever localised, this file becomes English and the Japanese moves to values-ja/ —
+  not the other way round.
+-->
+<resources>
+    <string name="app_name">SubKan</string>
+
+    <!-- Shared actions -->
+    <string name="action_save">保存</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_delete">削除</string>
+    <string name="action_undo">取り消す</string>
+    <string name="action_close">閉じる</string>
+    <string name="action_back">戻る</string>
+    <string name="action_edit">編集</string>
+    <string name="action_ok">OK</string>
+    <string name="error_required">必須項目です</string>
+
+    <!-- Subscription list -->
+    <string name="list_tab_all">すべて</string>
+    <string name="list_summary_total">月額合計</string>
+    <string name="list_summary_card">%1$sの月額</string>
+    <string name="list_empty">サブスクリプションが登録されていません</string>
+    <string name="list_empty_body">右下のボタンから最初のサブスクを登録しましょう。</string>
+    <string name="action_add_subscription">サブスクの追加</string>
+    <string name="action_add_card">カードを追加</string>
+    <string name="action_sort">並び替え</string>
+    <string name="action_settings">設定</string>
+    <string name="unknown_card">不明なカード</string>
+
+    <!-- Sorting -->
+    <string name="sort_registered">登録日順</string>
+    <string name="sort_name">名称順</string>
+    <string name="sort_payment_date">支払日順</string>
+    <string name="sort_ascending">昇順</string>
+    <string name="sort_descending">降順</string>
+
+    <!-- Billing cycle shown on a row -->
+    <string name="cycle_monthly">毎月%1$d日</string>
+    <string name="cycle_yearly">毎年%1$d月%2$d日</string>
+
+    <!-- Countdown badge. There is no 「済」 state: the badge always counts to the *next* charge. -->
+    <string name="status_today">今日</string>
+    <string name="status_days_left">あと %1$d 日</string>
+
+    <!-- Card tab actions -->
+    <string name="card_action_reorder">並び替え</string>
+    <string name="card_action_edit">名前・色を編集</string>
+    <string name="card_reorder_title">カードの並び替え</string>
+    <string name="card_delete_title">カードを削除</string>
+    <string name="card_delete_message">このカードを削除してもよろしいですか？</string>
+    <string name="card_delete_message_with_subscriptions">このカードを削除すると、紐づいているすべてのサブスクリプション（%1$d件）も同時に削除されます。よろしいですか？</string>
+    <string name="card_delete_message_detaches">このカードは現在サブスクリプションの支払いに設定されています。削除すると、対象サブスクリプションの支払いカード情報が未設定になります。よろしいですか？</string>
+    <string name="card_deleted">%1$sを削除しました</string>
+    <string name="card_deleted_with_subscriptions">%1$sと紐づくサブスクリプションを削除しました</string>
+
+    <!-- Card editor -->
+    <string name="card_editor_title_new">カードを追加</string>
+    <string name="card_editor_title_edit">カードを編集</string>
+    <string name="field_card_name">カード名 (例: 楽天カード)</string>
+    <string name="card_theme_color">テーマカラー</string>
+
+    <!-- Subscription editor -->
+    <string name="editor_title_new">新しいサブスク</string>
+    <string name="editor_title_edit">サブスクの編集</string>
+    <string name="field_service_name">サービス名</string>
+    <string name="field_service_name_hint">例: Netflix, Amazon Prime</string>
+    <string name="error_service_name_required">サービス名を入力してください</string>
+    <string name="field_price">金額</string>
+    <string name="field_price_optional">金額（任意）</string>
+    <string name="field_price_hint">未入力でも登録できます</string>
+    <string name="error_price_invalid">数値を入力してください</string>
+    <string name="field_is_estimated">金額は概算（約）</string>
+    <string name="field_is_estimated_summary">光熱費など、毎月の金額が変わるものに使います</string>
+    <!--
+      The estimate marker. Rendered as its own view next to the amount, never concatenated into it —
+      see ui/components/AmountText.kt for why.
+    -->
+    <string name="amount_estimate_marker">約</string>
+    <!-- Concatenated form, for the notification text where there is no layout to split. -->
+    <string name="amount_estimated_symbol">約 %1$s</string>
+    <string name="amount_estimated_japanese">約%1$s</string>
+    <string name="amount_unset">—</string>
+    <string name="cd_amount_estimated">概算 %1$s</string>
+    <string name="field_currency">通貨</string>
+    <string name="field_billing_cycle">支払い間隔</string>
+    <string name="billing_monthly">月額</string>
+    <string name="billing_yearly">年額</string>
+    <string name="field_next_payment_date">次回支払日</string>
+    <string name="field_card">支払カード</string>
+    <string name="error_card_required">支払カードを選択してください</string>
+    <string name="card_add_new">新しいカードを追加…</string>
+    <string name="action_register">登録する</string>
+    <string name="action_update">更新する</string>
+    <string name="subscription_deleted">%1$sを削除しました</string>
+
+    <!-- Card management -->
+    <string name="card_management_title">支払いカードの管理</string>
+    <string name="card_management_empty">カードがありません</string>
+    <string name="card_management_empty_body">右下のボタンから追加してください。</string>
+    <string name="cd_drag_handle">ドラッグして並び替え</string>
+    <string name="cd_move_up">上へ移動</string>
+    <string name="cd_move_down">下へ移動</string>
+
+    <!-- Settings -->
+    <string name="settings_title">設定</string>
+    <string name="settings_section_display">表示</string>
+    <string name="settings_section_notifications">通知</string>
+    <string name="settings_section_management">管理</string>
+    <string name="settings_section_sort">並び替え</string>
+    <string name="settings_section_about">アプリについて</string>
+
+    <string name="settings_theme">テーマ設定</string>
+    <string name="dialog_theme_title">テーマを選択</string>
+    <string name="theme_system">システム設定に合わせる</string>
+    <string name="theme_light">ライトテーマ</string>
+    <string name="theme_dark">ダークテーマ</string>
+
+    <string name="settings_dynamic_colour">ダイナミックカラー</string>
+    <string name="settings_dynamic_colour_summary">壁紙の色をアプリに反映します</string>
+    <string name="settings_dynamic_colour_unsupported">この端末では利用できません (Android 12 以降が必要)</string>
+
+    <string name="settings_show_estimate_prefix">概算に「約」を表示</string>
+    <string name="settings_show_estimate_prefix_summary">概算で登録した金額の先頭に「約」を付けます</string>
+
+    <string name="settings_amount_notation">金額の表記</string>
+    <string name="dialog_amount_notation_title">金額の表記を選択</string>
+    <string name="notation_symbol">記号（¥1,480）</string>
+    <string name="notation_japanese">日本語（1,480円）</string>
+
+    <!-- Shown beside 月額合計 when the total has any estimate folded into it. -->
+    <string name="summary_estimate_chip">概算含む</string>
+
+    <string name="settings_tab_position">タブバーの配置</string>
+    <string name="dialog_tab_position_title">タブバーの配置</string>
+    <string name="tab_position_top">画面上部に表示</string>
+    <string name="tab_position_bottom">画面下部に表示</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">支払日のお知らせ</string>
+    <string name="notification_channel_description">支払日の前日・当日にお知らせします。</string>
+    <string name="notification_title_day_before_single">明日は %1$s の支払日です</string>
+    <string name="notification_title_day_before_multi">明日は %1$d 件の支払日です</string>
+    <string name="notification_title_on_day_single">今日は %1$s の支払日です</string>
+    <string name="notification_title_on_day_multi">今日は %1$d 件の支払日です</string>
+    <string name="notification_body_total">合計 %1$s</string>
+
+    <string name="settings_notify_day_before">前日に通知</string>
+    <string name="settings_notify_day_before_summary">支払日の前日にお知らせします</string>
+    <string name="settings_notify_day_before_time">前日通知の時刻</string>
+    <string name="settings_notify_on_day">当日に通知</string>
+    <string name="settings_notify_on_day_summary">支払日の当日にお知らせします</string>
+    <string name="settings_notify_on_day_time">当日通知の時刻</string>
+    <string name="dialog_time_title">時刻を選択</string>
+    <string name="notification_permission_required">通知が許可されていません</string>
+    <string name="notification_permission_required_summary">タップして端末の設定から許可してください</string>
+
+    <string name="settings_cards">支払いカードの管理</string>
+    <string name="settings_cards_summary">カードの追加、編集、削除、並べ替え</string>
+
+    <string name="settings_sort">サブスクの並び替え</string>
+    <string name="dialog_sort_title">並び替え順を選択</string>
+    <string name="settings_sort_direction">サブスクの並べ替え順序</string>
+    <string name="dialog_sort_direction_title">順序を選択</string>
+
+    <string name="settings_about">このアプリについて</string>
+    <string name="settings_about_summary">バージョン情報・オープンソースライセンス</string>
+    <string name="settings_disclaimer">免責事項・プライバシー</string>
+    <string name="settings_disclaimer_summary">データの取り扱いと注意事項</string>
+    <string name="settings_source">ソースコード・フィードバック</string>
+    <string name="settings_source_summary">GitHub で開く</string>
+    <string name="error_open_link">リンクを開けませんでした</string>
+
+    <string name="about_title">SubKan について</string>
+    <string name="about_version">バージョン %1$s</string>
+    <string name="about_description">サブスクの料金・支払日・支払いカードをまとめて管理するアプリです。</string>
+    <string name="about_legalese">© 2026 Yosuke Abe</string>
+
+    <string name="disclaimer_title">免責事項・プライバシー</string>
+    <string name="disclaimer_body">SubKan は個人が開発した趣味のアプリです。本アプリの利用によって生じたいかなる損害についても、開発者は責任を負いません。自己責任でご利用ください。\n\n【データの取り扱い】\n・登録したサブスクやカードの情報は、お使いの端末内にのみ保存されます。外部のサーバーへ送信・収集されることはありません。\n\n・ただし、サービスのアイコンを自動取得する際に、入力したサービス名（ドメイン）が画像取得サービス（Google および wsrv.nl）へ送信されます。\n\n・アプリをアンインストールすると、保存したデータはすべて削除されます。</string>
+</resources>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Fetching service logos. Without it every subscription falls back to a lettered tile. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Payment reminders. POST_NOTIFICATIONS is requested at runtime on Android 13+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+      Opening the GitHub link from Settings. Android 11+ hides other packages unless they are
+      declared, and without this the "open in browser" intent silently resolves to nothing.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".SubKanApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
+        android:theme="@style/Theme.SubKan">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.SubKan">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Fires a daily reminder. Not exported: the only thing that ever starts it is a
+          PendingIntent this app created for AlarmManager.
+        -->
+        <receiver
+            android:name=".data.reminder.ReminderReceiver"
+            android:exported="false" />
+
+        <!--
+          Exported because these are system broadcasts, and the system cannot deliver them to a
+          receiver that is closed to the outside. All four are protected broadcasts, so no other
+          app can send them.
+        -->
+        <receiver
+            android:name=".data.reminder.ReminderBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

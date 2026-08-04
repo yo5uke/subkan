@@ -1,0 +1,10 @@
+# The Gradle wrapper script runs on the Linux CI runner. Committed with CRLF it fails there with a
+# confusing "bad interpreter" error, so pin it to LF regardless of the checkout platform.
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+# Never line-ending-convert these.
+*.png binary
+*.jar binary
+*.jks binary
+*.keystore binary

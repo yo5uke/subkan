@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "JAVA_HOME": "C:\\Program Files\\Android\\Android Studio\\jbr"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(./gradlew :app:testDebugUnitTest)",
+      "Bash(./gradlew :app:assembleDebug)",
+      "Bash(./gradlew :app:installDebug)",
+      "Bash(./gradlew :app:tasks)",
+      "Bash(./gradlew --version)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pwsh -NoProfile -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-theme-colours.ps1\""
+          }
+        ]
+      }
+    ]
+  }
+}

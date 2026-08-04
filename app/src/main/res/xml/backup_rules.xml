@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Everything the app owns is user-entered and lives nowhere else, so it is all backed up.
+  Coil's logo cache is excluded: it is several megabytes of images that re-download on demand.
+-->
+<full-backup-content>
+    <exclude domain="external" path="image_cache/" />
+    <exclude domain="file" path="image_cache/" />
+</full-backup-content>
