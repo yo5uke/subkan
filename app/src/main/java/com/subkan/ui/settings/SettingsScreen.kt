@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.CreditCard
@@ -63,6 +64,7 @@ import com.subkan.BuildConfig
 import com.subkan.R
 import com.subkan.core.model.AmountNotation
 import com.subkan.core.model.SubscriptionSort
+import com.subkan.core.model.SummaryPeriod
 import com.subkan.core.model.TabBarPosition
 import com.subkan.core.model.ThemePreference
 import com.subkan.ui.components.TimePickerDialog
@@ -185,6 +187,13 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_tab_position),
                 subtitle = stringResource(settings.tabBarPosition.labelRes()),
                 onClick = { openDialog = SettingsDialog.TabPosition },
+            )
+
+            SettingsRow(
+                icon = Icons.Outlined.CalendarMonth,
+                title = stringResource(R.string.settings_summary_period),
+                subtitle = stringResource(settings.summaryPeriod.labelRes()),
+                onClick = { openDialog = SettingsDialog.SummaryPeriod },
             )
 
             SectionHeader(stringResource(R.string.settings_section_notifications))
@@ -348,6 +357,15 @@ fun SettingsScreen(
             onDismiss = { openDialog = null },
         )
 
+        SettingsDialog.SummaryPeriod -> ChoiceDialog(
+            title = stringResource(R.string.dialog_summary_period_title),
+            options = SummaryPeriod.entries,
+            selected = settings.summaryPeriod,
+            label = { stringResource(it.labelRes()) },
+            onSelected = viewModel::setSummaryPeriod,
+            onDismiss = { openDialog = null },
+        )
+
         SettingsDialog.Sort -> ChoiceDialog(
             title = stringResource(R.string.dialog_sort_title),
             options = SubscriptionSort.entries,
@@ -420,6 +438,7 @@ fun SettingsScreen(
 private enum class SettingsDialog {
     Theme,
     TabPosition,
+    SummaryPeriod,
     Sort,
     SortDirection,
     AmountNotation,
@@ -556,4 +575,9 @@ private fun AmountNotation.labelRes(): Int = when (this) {
 private fun TabBarPosition.labelRes(): Int = when (this) {
     TabBarPosition.Top -> R.string.tab_position_top
     TabBarPosition.Bottom -> R.string.tab_position_bottom
+}
+
+private fun SummaryPeriod.labelRes(): Int = when (this) {
+    SummaryPeriod.Monthly -> R.string.summary_period_monthly
+    SummaryPeriod.Yearly -> R.string.summary_period_yearly
 }

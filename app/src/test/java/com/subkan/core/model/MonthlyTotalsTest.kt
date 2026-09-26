@@ -56,15 +56,23 @@ class MonthlyTotalsTest {
     }
 
     @Test
-    fun `mixed cycles are comparable in one total`() {
+    fun `yearly plan contributes nothing to monthly totals`() {
+        val sub = subscription(price = 12_000.0, cycle = BillingCycle.Yearly)
+        val totals = monthlyTotals(listOf(sub))
+        assertEquals(emptyList<CurrencyTotal>(), totals)
+    }
+
+    @Test
+    fun `monthly totals only sum monthly plans and ignore yearly plans`() {
         val totals = monthlyTotals(
             listOf(
-                subscription(price = 1_200.0, cycle = BillingCycle.Yearly),
-                subscription(price = 900.0, cycle = BillingCycle.Monthly),
+                subscription(id = "s1", price = 1_200.0, cycle = BillingCycle.Yearly),
+                subscription(id = "s2", price = 900.0, cycle = BillingCycle.Monthly),
             ),
         )
 
-        assertEquals(1_000.0, totals.single().amount, 0.001)
+        assertEquals(1, totals.size)
+        assertEquals(900.0, totals.single().amount, 0.001)
     }
 
     @Test
@@ -139,6 +147,74 @@ class MonthlyTotalsTest {
         assertEquals(AmountNotation.Symbol, AmountNotation.fromNameOrDefault(null))
         assertEquals(AmountNotation.Symbol, AmountNotation.fromNameOrDefault("Nonsense"))
         assertEquals(AmountNotation.Japanese, AmountNotation.fromNameOrDefault("Japanese"))
+    }
+
+    // --- yearlyTotals ------------------------------------------------------------------------
+
+    @Test
+    fun `yearly plan contributes its full price to yearly totals`() {
+        val sub = subscription(price = 12_000.0, cycle = BillingCycle.Yearly)
+        val totals = yearlyTotals(listOf(sub))
+        assertEquals(1, totals.size)
+        assertEquals(12_000.0, totals.single().amount, 0.001)
+    }
+
+    @Test
+    fun `monthly plan contributes nothing to yearly totals`() {
+        val sub = subscription(price = 1_000.0, cycle = BillingCycle.Monthly)
+        val totals = yearlyTotals(listOf(sub))
+        assertEquals(emptyList<CurrencyTotal>(), totals)
+    }
+
+    @Test
+    fun `yearly totals only sum yearly plans and ignore monthly plans`() {
+        val totals = yearlyTotals(
+            listOf(
+                subscription(id = "s1", price = 12_000.0, cycle = BillingCycle.Yearly),
+                subscription(id = "s2", price = 980.0, cycle = BillingCycle.Monthly),
+                subscription(id = "s3", price = 6_000.0, cycle = BillingCycle.Yearly),
+            ),
+        )
+        assertEquals(1, totals.size)
+        assertEquals(18_000.0, totals.single().amount, 0.001)
+    }
+
+    @Test
+    fun `yearly totals are grouped per currency and JPY sorts first`() {
+        val totals = yearlyTotals(
+            listOf(
+                subscription(price = 100.0, currency = Currency.USD, cycle = BillingCycle.Yearly),
+                subscription(price = 50.0, currency = Currency.EUR, cycle = BillingCycle.Yearly),
+                subscription(price = 10_000.0, currency = Currency.JPY, cycle = BillingCycle.Yearly),
+            ),
+        )
+        assertEquals(listOf(Currency.JPY, Currency.EUR, Currency.USD), totals.map { it.currency })
+        assertEquals(10_000.0, totals[0].amount, 0.001)
+        assertEquals(50.0, totals[1].amount, 0.001)
+        assertEquals(100.0, totals[2].amount, 0.001)
+    }
+
+    @Test
+    fun `amountless yearly subscriptions contribute nothing`() {
+        val totals = yearlyTotals(
+            listOf(
+                subscription(price = 12_000.0, cycle = BillingCycle.Yearly),
+                subscription(price = null, cycle = BillingCycle.Yearly),
+            ),
+        )
+        assertEquals(12_000.0, totals.single().amount, 0.001)
+    }
+
+    @Test
+    fun `one estimated yearly plan makes the whole yearly total an estimate`() {
+        val totals = yearlyTotals(
+            listOf(
+                subscription(price = 10_000.0, cycle = BillingCycle.Yearly),
+                subscription(price = 5_000.0, isEstimated = true, cycle = BillingCycle.Yearly),
+            ),
+        )
+        assertEquals(true, totals.single().isEstimated)
+        assertEquals(15_000.0, totals.single().amount, 0.001)
     }
 }
 

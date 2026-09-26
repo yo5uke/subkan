@@ -6,6 +6,7 @@ import com.subkan.core.model.AmountNotation
 import com.subkan.core.model.PaymentCard
 import com.subkan.core.model.SubscriptionSort
 import com.subkan.core.model.Subscription
+import com.subkan.core.model.SummaryPeriod
 import com.subkan.core.model.TabBarPosition
 import com.subkan.core.model.sorted
 import com.subkan.core.time.AppClock
@@ -33,6 +34,7 @@ data class HomeUiState(
     val sort: SubscriptionSort = SubscriptionSort.Registered,
     val sortAscending: Boolean = true,
     val tabBarPosition: TabBarPosition = TabBarPosition.Top,
+    val summaryPeriod: SummaryPeriod = SummaryPeriod.Monthly,
     val showEstimatePrefix: Boolean = true,
     val notation: AmountNotation = AmountNotation.Symbol,
     val today: LocalDate = LocalDate.EPOCH,
@@ -73,6 +75,7 @@ class HomeViewModel @Inject constructor(
             sort = settings.sort,
             sortAscending = settings.sortAscending,
             tabBarPosition = settings.tabBarPosition,
+            summaryPeriod = settings.summaryPeriod,
             showEstimatePrefix = settings.showEstimatePrefix,
             notation = settings.amountNotation,
             today = today,
@@ -83,6 +86,12 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = HomeUiState(),
     )
+
+    // --- Period ------------------------------------------------------------------------------
+
+    fun setSummaryPeriod(period: SummaryPeriod) = viewModelScope.launch {
+        settingsRepository.setSummaryPeriod(period)
+    }
 
     // --- Sorting -----------------------------------------------------------------------------
 

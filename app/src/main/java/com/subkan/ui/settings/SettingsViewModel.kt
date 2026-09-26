@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.subkan.core.model.AmountNotation
 import com.subkan.core.model.AppSettings
 import com.subkan.core.model.SubscriptionSort
+import com.subkan.core.model.SummaryPeriod
 import com.subkan.core.model.TabBarPosition
 import com.subkan.core.model.ThemePreference
 import com.subkan.data.preferences.SettingsRepository
@@ -53,6 +54,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setTabBarPosition(position: TabBarPosition) = viewModelScope.launch {
         settingsRepository.setTabBarPosition(position)
+    }
+
+    fun setSummaryPeriod(period: SummaryPeriod) = viewModelScope.launch {
+        settingsRepository.setSummaryPeriod(period)
     }
 
     fun setSort(sort: SubscriptionSort) = viewModelScope.launch {

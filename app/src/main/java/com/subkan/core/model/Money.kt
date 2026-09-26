@@ -78,20 +78,51 @@ data class CurrencyTotal(
 /**
  * Per-currency monthly totals, ordered for display.
  *
- * JPY sorts first because it is the default and the overwhelmingly common case for this app's
- * users; everything else follows alphabetically so the order is stable as subscriptions come and go.
+ * Only monthly subscriptions contribute — yearly subscriptions are excluded rather than divided
+ * by twelve, answering "how much do I pay in monthly recurring charges?" rather than projecting an
+ * annualised run-rate.
  *
- * Subscriptions with no amount entered contribute nothing — they are not treated as zero, and a
- * currency represented only by such subscriptions does not appear at all.
+ * Subscriptions with no amount entered contribute nothing, and a currency represented only by
+ * yearly or amountless subscriptions does not appear at all.
  */
 fun monthlyTotals(subscriptions: List<Subscription>): List<CurrencyTotal> =
     subscriptions
-        .mapNotNull { sub -> sub.monthlyAmount?.let { sub to it } }
+        .filter { it.billingCycle == BillingCycle.Monthly }
+        .mapNotNull { sub -> sub.price?.let { sub to it } }
         .groupBy { (sub, _) -> sub.currency }
         .map { (currency, entries) ->
             CurrencyTotal(
                 currency = currency,
-                amount = entries.sumOf { (_, amount) -> amount },
+                amount = entries.sumOf { (_, price) -> price },
+                isEstimated = entries.any { (sub, _) -> sub.isEstimated },
+            )
+        }
+        .sortedWith(
+            compareBy(
+                { if (it.currency == Currency.JPY) 0 else 1 },
+                { it.currency.code },
+            ),
+        )
+
+/**
+ * Per-currency yearly totals, ordered for display.
+ *
+ * Only yearly subscriptions contribute — monthly subscriptions are excluded rather than multiplied
+ * by twelve, answering "how much do I pay in annual lump sums?" rather than projecting an
+ * annualised run-rate.
+ *
+ * Subscriptions with no amount entered contribute nothing, and a currency represented only by
+ * monthly or amountless subscriptions does not appear at all.
+ */
+fun yearlyTotals(subscriptions: List<Subscription>): List<CurrencyTotal> =
+    subscriptions
+        .filter { it.billingCycle == BillingCycle.Yearly }
+        .mapNotNull { sub -> sub.price?.let { sub to it } }
+        .groupBy { (sub, _) -> sub.currency }
+        .map { (currency, entries) ->
+            CurrencyTotal(
+                currency = currency,
+                amount = entries.sumOf { (_, price) -> price },
                 isEstimated = entries.any { (sub, _) -> sub.isEstimated },
             )
         }

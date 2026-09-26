@@ -89,4 +89,16 @@ class SettingsRepositoryTest {
         repository.setNotificationPermissionRequested(true)
         assertEquals(true, repository.settings.first().notificationPermissionRequested)
     }
+
+    @Test
+    fun `summary period defaults to monthly and survives a round trip`() = runTest(
+        StandardTestDispatcher(),
+    ) {
+        val repository = repository(backgroundScope)
+
+        assertEquals(com.subkan.core.model.SummaryPeriod.Monthly, repository.settings.first().summaryPeriod)
+
+        repository.setSummaryPeriod(com.subkan.core.model.SummaryPeriod.Yearly)
+        assertEquals(com.subkan.core.model.SummaryPeriod.Yearly, repository.settings.first().summaryPeriod)
+    }
 }

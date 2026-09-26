@@ -23,8 +23,12 @@
 
     <!-- Subscription list -->
     <string name="list_tab_all">すべて</string>
-    <string name="list_summary_total">月額合計</string>
-    <string name="list_summary_card">%1$sの月額</string>
+    <string name="list_summary_total">月払い合計</string>
+    <string name="list_summary_card">%1$sの月払い</string>
+    <string name="list_summary_yearly_total">年払い合計</string>
+    <string name="list_summary_card_yearly">%1$sの年払い</string>
+    <string name="summary_period_monthly">月払い</string>
+    <string name="summary_period_yearly">年払い</string>
     <string name="list_empty">サブスクリプションが登録されていません</string>
     <string name="list_empty_body">右下のボタンから最初のサブスクを登録しましょう。</string>
     <string name="action_add_subscription">サブスクの追加</string>
@@ -140,6 +144,9 @@
     <string name="dialog_tab_position_title">タブバーの配置</string>
     <string name="tab_position_top">画面上部に表示</string>
     <string name="tab_position_bottom">画面下部に表示</string>
+
+    <string name="settings_summary_period">合計の表示</string>
+    <string name="dialog_summary_period_title">表示する合計を選択</string>
 
     <!-- Notifications -->
     <string name="notification_channel_name">支払日のお知らせ</string>

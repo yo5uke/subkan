@@ -57,6 +57,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,9 +73,11 @@ import com.subkan.core.model.CurrencyTotal
 import com.subkan.core.model.PaymentCard
 import com.subkan.core.model.Subscription
 import com.subkan.core.model.SubscriptionSort
+import com.subkan.core.model.SummaryPeriod
 import com.subkan.core.model.TabBarPosition
 import com.subkan.core.model.format
 import com.subkan.core.model.monthlyTotals
+import com.subkan.core.model.yearlyTotals
 import com.subkan.ui.components.EmptyState
 import com.subkan.ui.components.SubscriptionRow
 import com.subkan.ui.editor.CardActionsSheet
@@ -209,9 +217,16 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
+            val currentSubscriptions = subscriptionsForTab(uiState, visibleTab)
+            val totals = when (uiState.summaryPeriod) {
+                SummaryPeriod.Monthly -> monthlyTotals(currentSubscriptions)
+                SummaryPeriod.Yearly -> yearlyTotals(currentSubscriptions)
+            }
             SummaryHeader(
-                label = summaryLabel(uiState.cards, visibleTab),
-                totals = monthlyTotals(subscriptionsForTab(uiState, visibleTab)),
+                label = summaryLabel(uiState.cards, visibleTab, uiState.summaryPeriod),
+                totals = totals,
+                period = uiState.summaryPeriod,
+                onPeriodChanged = viewModel::setSummaryPeriod,
                 showEstimatePrefix = uiState.showEstimatePrefix,
                 notation = uiState.notation,
             )
@@ -353,12 +368,23 @@ private fun subscriptionsForTab(state: HomeUiState, tabIndex: Int): List<Subscri
 }
 
 @Composable
-private fun summaryLabel(cards: List<PaymentCard>, tabIndex: Int): String {
+private fun summaryLabel(cards: List<PaymentCard>, tabIndex: Int, period: SummaryPeriod): String {
     val card = if (tabIndex <= 0) null else cards.getOrNull(tabIndex - 1)
-    return if (card == null) {
-        stringResource(R.string.list_summary_total)
-    } else {
-        stringResource(R.string.list_summary_card, card.name)
+    return when (period) {
+        SummaryPeriod.Monthly -> {
+            if (card == null) {
+                stringResource(R.string.list_summary_total)
+            } else {
+                stringResource(R.string.list_summary_card, card.name)
+            }
+        }
+        SummaryPeriod.Yearly -> {
+            if (card == null) {
+                stringResource(R.string.list_summary_yearly_total)
+            } else {
+                stringResource(R.string.list_summary_card_yearly, card.name)
+            }
+        }
     }
 }
 
@@ -382,7 +408,7 @@ private fun HomeTitle() {
 }
 
 /**
- * The month's total for whichever tab is on screen.
+ * The total for whichever tab is on screen (monthly or yearly).
  *
  * The gradient runs primaryContainer → secondaryContainer and the text is `onPrimaryContainer`.
  * That pairing is safe because M3 puts every `*Container` role at the same tone, so the contrast
@@ -392,6 +418,8 @@ private fun HomeTitle() {
 private fun SummaryHeader(
     label: String,
     totals: List<CurrencyTotal>,
+    period: SummaryPeriod,
+    onPeriodChanged: (SummaryPeriod) -> Unit,
     showEstimatePrefix: Boolean,
     notation: AmountNotation,
 ) {
@@ -415,20 +443,30 @@ private fun SummaryHeader(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.weight(1f, fill = false),
-                )
-                if (estimated) {
-                    EstimateChip()
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (estimated) {
+                        EstimateChip()
+                    }
                 }
+                PeriodToggle(
+                    selectedPeriod = period,
+                    onPeriodChanged = onPeriodChanged,
+                )
             }
             if (totals.isEmpty()) {
                 Text(
@@ -459,6 +497,65 @@ private fun SummaryHeader(
                                 ),
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PeriodToggle(
+    selectedPeriod: SummaryPeriod,
+    onPeriodChanged: (SummaryPeriod) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+    ) {
+        Row(
+            modifier = Modifier.padding(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SummaryPeriod.entries.forEach { period ->
+                val selected = period == selectedPeriod
+                val text = when (period) {
+                    SummaryPeriod.Monthly -> stringResource(R.string.summary_period_monthly)
+                    SummaryPeriod.Yearly -> stringResource(R.string.summary_period_yearly)
+                }
+                if (selected) {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        shadowElevation = 1.dp,
+                    ) {
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .clickable { onPeriodChanged(period) }
+                            .semantics {
+                                role = Role.RadioButton
+                                this.selected = false
+                            }
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                        )
                     }
                 }
             }

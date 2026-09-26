@@ -29,6 +29,20 @@ enum class TabBarPosition {
     }
 }
 
+/**
+ * Which period is aggregated in the home screen summary header.
+ */
+enum class SummaryPeriod {
+    Monthly,
+    Yearly,
+    ;
+
+    companion object {
+        fun fromNameOrDefault(value: String?): SummaryPeriod =
+            entries.firstOrNull { it.name == value } ?: Monthly
+    }
+}
+
 data class AppSettings(
     val theme: ThemePreference = ThemePreference.System,
     /**
@@ -37,6 +51,7 @@ data class AppSettings(
      */
     val useDynamicColour: Boolean = false,
     val tabBarPosition: TabBarPosition = TabBarPosition.Top,
+    val summaryPeriod: SummaryPeriod = SummaryPeriod.Monthly,
     val sort: SubscriptionSort = SubscriptionSort.Registered,
     val sortAscending: Boolean = true,
     /**

@@ -10,6 +10,7 @@ import com.subkan.core.model.AmountNotation
 import com.subkan.core.model.AppSettings
 import com.subkan.core.model.NotificationSettings
 import com.subkan.core.model.SubscriptionSort
+import com.subkan.core.model.SummaryPeriod
 import com.subkan.core.model.localTimeFromMinuteOfDay
 import com.subkan.core.model.TabBarPosition
 import com.subkan.core.model.ThemePreference
@@ -30,6 +31,7 @@ class SettingsRepository @Inject constructor(
             theme = ThemePreference.fromNameOrDefault(prefs[Keys.Theme]),
             useDynamicColour = prefs[Keys.DynamicColour] ?: false,
             tabBarPosition = TabBarPosition.fromNameOrDefault(prefs[Keys.TabBarPosition]),
+            summaryPeriod = SummaryPeriod.fromNameOrDefault(prefs[Keys.SummaryPeriod]),
             sort = SubscriptionSort.fromNameOrDefault(prefs[Keys.Sort]),
             sortAscending = prefs[Keys.SortAscending] ?: true,
             showEstimatePrefix = prefs[Keys.ShowEstimatePrefix] ?: true,
@@ -53,6 +55,9 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setTabBarPosition(position: TabBarPosition) =
         edit { it[Keys.TabBarPosition] = position.name }
+
+    suspend fun setSummaryPeriod(period: SummaryPeriod) =
+        edit { it[Keys.SummaryPeriod] = period.name }
 
     suspend fun setSort(sort: SubscriptionSort) = edit { it[Keys.Sort] = sort.name }
 
@@ -87,6 +92,7 @@ class SettingsRepository @Inject constructor(
         val Theme = stringPreferencesKey("theme")
         val DynamicColour = booleanPreferencesKey("dynamic_colour")
         val TabBarPosition = stringPreferencesKey("tab_bar_position")
+        val SummaryPeriod = stringPreferencesKey("summary_period")
         val Sort = stringPreferencesKey("subscription_sort")
         val SortAscending = booleanPreferencesKey("subscription_sort_ascending")
         val ShowEstimatePrefix = booleanPreferencesKey("show_estimate_prefix")

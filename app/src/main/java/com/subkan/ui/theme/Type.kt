@@ -3,6 +3,8 @@ package com.subkan.ui.theme
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
 
@@ -18,6 +20,12 @@ import androidx.compose.ui.unit.sp
 private val Default = Typography()
 
 /**
+ * Explicit ja-JP locale stops Android from falling back to Simplified Chinese glyphs (Noto Sans SC)
+ * on devices or emulators set to a non-CJK system language like English.
+ */
+private val JapaneseLocale = LocaleList(Locale("ja-JP"))
+
+/**
  * Trim-both alignment stops Japanese service names sitting off-centre in a list row — CJK glyphs
  * are taller than Latin ones, so the default first-line padding shows.
  */
@@ -26,7 +34,10 @@ private val CjkFriendlyLineHeight = LineHeightStyle(
     trim = LineHeightStyle.Trim.None,
 )
 
-private fun TextStyle.cjkFriendly(): TextStyle = copy(lineHeightStyle = CjkFriendlyLineHeight)
+private fun TextStyle.cjkFriendly(): TextStyle = copy(
+    lineHeightStyle = CjkFriendlyLineHeight,
+    localeList = JapaneseLocale,
+)
 
 internal val SubKanTypography = Typography(
     displayLarge = Default.displayLarge.cjkFriendly(),
